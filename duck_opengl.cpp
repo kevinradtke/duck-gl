@@ -11,6 +11,32 @@
 
 #define checkImageWidth 64
 #define checkImageHeight 64
+
+const GLchar *vertexShaderSource = "#version 330 core\n"
+"layout (location = 0) in vec3 aPos;\n"
+"layout (location = 1) in vec3 aColor;\n"
+"layout (location = 2) in vec2 aTexCoord;\n"
+"out vec3 ourColor;\n"
+"out vec2 TexCoord;\n"
+"void main()\n"
+"{\n"
+"gl_Position = vec4(aPos, 1.0);\n"
+"ourColor = aColor;\n"
+"TexCoord = aTexCoord;\n"
+"}";
+
+const GLchar *fragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"in vec3 ourColor;\n"
+"in vec2 TexCoord;\n"
+"uniform sampler2D ourTexture;\n"
+"void main()\n"
+"{\n"
+"FragColor = texture(ourTexture, TexCoord);\n"
+"}";
+
+GLuint shaderProgram;
+
 static GLubyte checkImage[checkImageHeight][checkImageWidth][4];
 int width, height,colours;
 
@@ -33,6 +59,7 @@ GLfloat scalingY = 1.0f;
 GLfloat translationX = 0.0f;
 GLfloat translationY = 0.0f;
 
+// MAKE IMAGE TO TEXTURE BODY
 void makeCheckImage(void)
 {
     int i, j, c;
@@ -42,7 +69,7 @@ void makeCheckImage(void)
     //Reading texture file
     std::ifstream inFile;
     
-    inFile.open("/Users/anamarcelav/Documents/ITESM/Gráficas/Window_OpenGL/brown-texture.ppm");
+    inFile.open("/Users/anamarcelav/Documents/ITESM/Gráficas/Window_OpenGL/Raul.ppm");
     if (!inFile) {
         std::cout << "Unable to open file";
         exit(1); // terminate with error
@@ -125,24 +152,67 @@ int main( void )
     GLfloat halfScreenWidth = SCREEN_WIDTH / 2;
     GLfloat halfScreenHeight = SCREEN_HEIGHT / 2;
     
-    // texture stuff
+    // --------- shaders-----------
+    //    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER); //CREATE SHADER RETURNS 0 AND CREATES A BAD ACCESS.
+    //    glShaderSource( vertexShader, 1, &vertexShaderSource, NULL );
+    //    glCompileShader(vertexShader);
+    //
+    //    GLint success;
+    //    GLchar infoLog[512];
+    //
+    //    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    //
+    //    if (!success) {
+    //        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+    //        std::cout << "error in vertex shaderrrr \n" << infoLog << std::endl;
+    //    }
+    //
+    //    GLuint fragmentShader = glCreateShader( GL_FRAGMENT_SHADER );
+    //    glShaderSource( fragmentShader, 1, &fragmentShaderSource, NULL );
+    //    glCompileShader(fragmentShader);
+    //
+    //    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    //    if (!success) {
+    //        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+    //        std::cout << "error in fragment shaderrrr \n" << infoLog << std::endl;
+    //    }
+    //    shaderProgram = glCreateProgram( );
+    //    glAttachShader(shaderProgram, vertexShader);
+    //    glAttachShader(shaderProgram, fragmentShader);
+    //    glLinkProgram(shaderProgram);
+    //
+    //    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    //    if (!success) {
+    //        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+    //        std::cout << "error in shader program linking \n" << infoLog << std::endl;
+    //    }
+    //
+    //    glDeleteShader(vertexShader);
+    //    glDeleteShader(fragmentShader);
+    
+    // -------- TEXTURE ------------
     //    GLuint texture;
     //    glGenTextures(1, &texture);
     //    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    // ---- SOIL para convertir la imagen jpg
+    
+    //    unsigned char* image = SOIL_load_image("brown-texture.jpg", &width, &height, 0, SOIL_LOAD_RGBA);
+    //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,
+    //                 height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+    //                 image);
+    
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     makeCheckImage();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, checkImageWidth,
                  checkImageHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
                  checkImage);
     
-    // ---- SOIL puede hacer lo que el profe hace con el ppm pero transforma la imagen solo, pero idk no jala
-    //creo que borre unas cosas de la otra forma de hacerlo lo saque de aqui https://www.youtube.com/watch?v=RnXDUFq7T6A
     
-    //unsigned char* image = SOIL_load_image("brown-texture.jpg", &width, &height, 0, SOIL_LOAD_RGBA);
-    //    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,
-    //                 height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-    //                 image);
     
     // Loop until the user closes the window
     while ( !glfwWindowShouldClose( window ) )
@@ -158,12 +228,13 @@ int main( void )
         glRotatef( rotationY, 0, 1, 0 );
         glRotatef( rotationZ, 0, 0, 1 );
         glTranslatef( -halfScreenWidth, -halfScreenHeight, 500 );
-        
         glEnable(GL_TEXTURE_2D);
         
+        glColor3f(0.41961,0.2784,0.2);
         //TORSO
         DrawCube( halfScreenWidth, halfScreenHeight, -500, 150, 100, 100 );
         glDisable(GL_TEXTURE_2D);
+        
         glColor3f(1,0.709804,0.274501);
         //PICO
         DrawCube( halfScreenWidth+85, halfScreenHeight+80, -500, 40, 15, 50 );
@@ -419,13 +490,161 @@ void DrawCube( GLfloat centerPosX, GLfloat centerPosY, GLfloat centerPosZ, GLflo
     
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glEnableClientState( GL_VERTEX_ARRAY );
-    //    glEnableClientState( GL_COLOR_ARRAY );
     glVertexPointer( 3, GL_FLOAT, 0, vertices );
-    
-    
-    //glColorPointer( 3, GL_FLOAT, 0, colour );
-    
     glDrawArrays( GL_QUADS, 0, 24 );
-    //glDisableClientState( GL_COLOR_ARRAY );
     glDisableClientState( GL_VERTEX_ARRAY );
 }
+
+// FUNCTION TO DRAW BODY WITH TEXTURE
+
+//void DrawCubeWithTexture( GLfloat centerPosX, GLfloat centerPosY, GLfloat centerPosZ, GLfloat edgeLengthX, GLfloat edgeLengthY, GLfloat edgeLengthZ)
+//{
+//    GLfloat halfSideLengthX = edgeLengthX * 0.5f;
+//    GLfloat halfSideLengthY = edgeLengthY * 0.5f;
+//    GLfloat halfSideLengthZ = edgeLengthZ * 0.5f;
+//
+//    GLfloat vertices[] =
+//    {
+//        // front face
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f,  // top right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f,  // bottom right
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f, // bottom left
+//
+//        // back face
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f, // top right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f, // bottom right
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f, // bottom left
+//
+//        // left face
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f, // top right
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f, // bottom right
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f, // bottom left
+//
+//        // right face
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f, // top right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f, // bottom right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f, // bottom left
+//
+//        // top face
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX - halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f, // top right
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f, // bottom right
+//        centerPosX + halfSideLengthX, centerPosY + halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f, // bottom left
+//
+//        // bottom face
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 1.0f, // top left
+//        centerPosX - halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 1.0f, // top right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ - halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 1.0f, 0.0f, // bottom right
+//        centerPosX + halfSideLengthX, centerPosY - halfSideLengthY, centerPosZ + halfSideLengthZ,       /*colors*/  1.0f, 1.0f, 1.0f,     /*texture*/ 0.0f, 0.0f  // bottom left
+//    };
+//
+//    GLuint indices[] = {
+//        0, 1, 3,
+//        1, 2, 3
+//    };
+//
+//    GLuint VBO, VAO, EBO;
+//    glGenVertexArrays(1,&VAO);
+//    glGenBuffers(1,&VBO);
+//    glGenBuffers(1,&EBO);
+//
+//    glBindVertexArray(VAO);
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+//
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+//
+//    // position attribute
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+//    glEnableVertexAttribArray(0);
+//    // color attribute
+//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+//    glEnableVertexAttribArray(1);
+//    // texture coord attribute
+//    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+//    glEnableVertexAttribArray(2);
+//
+//
+//
+//
+//    GLuint texture;
+//    int width, height;
+//
+//    glGenTextures( 1, &texture);
+//    glBindTexture(GL_TEXTURE_2D, texture);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//
+//    unsigned char* img = SOIL_load_image("brown-texture.jpg", &width, &height, 0, SOIL_LOAD_RGBA);
+//    glBindTexture(GL_TEXTURE_2D, texture);
+//    if (img)
+//    {
+//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,
+//                     height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+//                     img);
+//        glGenerateMipmap(GL_TEXTURE_2D);
+//        SOIL_free_image_data(img);
+//        glBindTexture(GL_TEXTURE_2D, 0);
+//    }
+//    else
+//    {
+//        std::cout << "Failed to load texture" << std::endl;
+//    }
+//
+//    glUseProgram(shaderProgram);
+//
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, texture);
+//    glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0 );
+//
+//
+//    glBindVertexArray(VAO);
+//    glDrawArrays(GL_TRIANGLES, 0, 3);
+//    glBindVertexArray(0);
+//
+//    glDeleteVertexArrays(1,&VAO);
+//    glDeleteBuffers(1, &VBO);
+//    glDeleteBuffers(1, &EBO);
+//
+//
+//    // APPLIES TRANSFORMATION OF ROTATION
+//
+//    rotationX = rx;
+//    rotationY = ry;
+//    rotationZ = rz;
+//
+//    // APPLIES TRANSFORMATIONS OF SCALING AND TRANSLATION
+//
+//    int counter = 0;
+//    for (int i=0; i<72; i++) {
+//        if (counter == 0) {
+//            vertices[i] *= sx;
+//            vertices[i] += tx;
+//        }
+//        else if (counter == 1) {
+//            vertices[i] *= sy;
+//            vertices[i] += ty;
+//        }
+//        if (counter == 2) {
+//            vertices[i] *= sz;
+//            vertices[i] += tz;
+//        }
+//        counter++;
+//        counter %= 3;
+//    }
+//
+//    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+//    glEnableClientState( GL_VERTEX_ARRAY );
+//    glVertexPointer( 3, GL_FLOAT, 0, vertices );
+//    glDrawArrays( GL_QUADS, 0, 24 );
+//    glDisableClientState( GL_VERTEX_ARRAY );
+//}
+
